@@ -3,6 +3,12 @@ let playerTween;
 let detectiveOffice;
 let clickableArea;
 
+let xActualClick;
+let yActualClick;
+
+let xMouseTarget;
+let yMouseTarget;
+
 let walkableArea = {
 	minX: 115,
 	maxX: 475,
@@ -13,16 +19,8 @@ let walkableArea = {
 let clickableObjects = [
 	{ 
 		name: 'computer',
-		coords: {
-			topLeftX: 542,
-			topLeftY: 252,
-			topRightY: 570,
-			topRightY: 252,
-			bottomLeftX: 536,
-			bottomLeftY: 281,
-			bottomRightX: 593,
-			bottomRightY: 288,
-		},
+	},
+	{
 		lookMessages: [
 			"It's my trusty terminal.", 
 			"I never could get the hang of these things."
@@ -52,9 +50,9 @@ var playState = {
     	detectiveOffice.inputEnabled = true;
     	detectiveOffice.events.onInputDown.add(movePlayer, this);
 
-    	clickableArea = game.add.sprite(542, 252, 'clickableArea');
-    	clickableArea.scale.setTo(0.5, 0.5);
-    	clickableArea.events.onInputDown.add(playerClick, this);
+    	// clickableArea = game.add.sprite(542, 252, 'clickableArea');
+    	// clickableArea.scale.setTo(0.5, 0.5);
+    	// clickableArea.events.onInputDown.add(movePlayer, this);
 
     },
     
@@ -66,6 +64,12 @@ var playState = {
 }
 
 function movePlayer(i){
+
+	console.log(i.input.downPoint.x)
+	console.log(i.input.downPoint.y)
+	yActualClick = i.input.downPoint.y;
+	xActualClick = i.input.downPoint.x;
+
 	// Remove any existing tweens so you don't get layered tweens on top of each other,
 	// which was causing a weird defect with sprite jumping between both destinations
 	if(playerTween != null){
@@ -74,113 +78,54 @@ function movePlayer(i){
 
 	// Create the new tween each time
 	playerTween = game.add.tween(playerAvatar);
-    let x = i.input.downPoint.x;
-    let y = i.input.downPoint.y;
-    coords = [];
-    coords.push(x);
-    coords.push(y);
-    const movementTime = calculateVelocity(x, y);
 
-    if((x >= walkableArea.minX && x<= walkableArea.maxX) && 
-    	(y >= walkableArea.minY && y <= walkableArea.maxY)){
-    		playerTween.to({x: x, y: y}, movementTime, Phaser.Easing.Linear.None, true);	
-    }
+	// Check for out-of-bounds clicks
 
-    // The following controls what happens when player clicks outside the bounds of clickable
-    // area. If that happens, it hardcodes the values to min or max values.
-
-    // Else if x is less than min X coord, set x limit as minimum value for area
-
-    else if ((x <= walkableArea.minX) && (y >= walkableArea.minY && y <= walkableArea.maxY))
-    {
-    	// if clicking outside the min/max range for that axis, 
-    	// just go to the values in walkable area
-    	x = walkableArea.minX;
-    	playerTween.to({x: x, y: y}, movementTime, 'Linear', true);	
-    }
-
-    // Else if x is more than max X coord, set x limit as maximum value for area
-
-    else if ((x >= walkableArea.maxX) && (y >= walkableArea.minY && y <= walkableArea.maxY))
-    {
-    	// if clicking outside the min/max range for that axis, 
-    	// just go to the values in walkable area
-    	x = walkableArea.maxX;
-    	playerTween.to({x: x, y: y}, movementTime, 'Linear', true);	
-    }
-
-    // Else if y is less than min y coord, set y limit as minimum value for area
-
-	else if ((y <= walkableArea.minY) && (x >= walkableArea.minX && x<= walkableArea.maxX))
-    {
-    	// if clicking outside the min/max range for that axis, 
-    	// just go to the values in walkable area
-    	y = walkableArea.minY;
-    	playerTween.to({x: x, y: y}, movementTime, 'Linear', true);	
-    }
-
-    // Else if y is more than min y coord, set y limit as minimum value for area
-
-	else if ((y <= walkableArea.maxY) && (x >= walkableArea.minX && x<= walkableArea.maxX))
-    {
-    	// if clicking outside the min/max range for that axis, 
-    	// just go to the values in walkable area
-    	y = walkableArea.maxY;
-    	playerTween.to({x: x, y: y}, movementTime, 'Linear', true);	
-    }
-
-    // block any other tween action until this has run
-
-
-    // if(playerTween.isRunning){
-    // 	console.log("Running");
-    // 	console.log(playerTween.isRunning);
-    // }
-
-    // console.log(playerTween)
-    // playerTween.onComplete.add(test, this);
-
-};
-
-// function test(){
-	
-// }
-
-function calculateVelocity(clickX, clickY){
-
-	var distanceX = clickX - playerAvatar.position.x;
-	var distanceY = clickY - playerAvatar.position.y;
-
-	totalDistance = distanceX + distanceY;
-
-	if(totalDistance < 0){
-		totalDistance = totalDistance * -1;
+	if(i.input.downPoint.x < 115){
+		xMouseTarget = 115;
+	}
+	else if(i.input.downPoint.x > 475){
+		xMouseTarget = 475;
+	}
+	else {
+		xMouseTarget = i.input.downPoint.x;
 	}
 
-	console.log('Total Distance = ' + totalDistance)
-
-	var desiredSpeed = 225;
-	var time = totalDistance / desiredSpeed;
-
-	time = time * 1000;
-	if(time < 300){
-		time = 400;
+	if(i.input.downPoint.y < 330){
+		yMouseTarget = 330;
 	}
-	console.log('Time: ' + time + ' millisecs')
-	return time;
+	else if(i.input.downPoint.y > 395){
+		yMouseTarget = 395;
+	}
+	else {
+		yMouseTarget = i.input.downPoint.y;
+	}
+
+	const duration = (game.physics.arcade.distanceToXY(playerAvatar, xMouseTarget, yMouseTarget) / 250) * 1000;
+
+	playerTween.to({x: xMouseTarget, y: yMouseTarget}, duration, Phaser.Easing.Linear.None, true)
+	playerTween.onComplete.add(clickAction, this)
 };
 
-function playerClick(i){
+function clickAction(i){
 	// move to item
-
-	movePlayer(i);
-
-	// once tween is done, perform action on it
-	console.log('x point:' + i.input.downPoint.x)
-	console.log('y point:' + i.input.downPoint.y)
-
+	console.log('clicked');
 	console.log(i);
+	// check to see if
+	console.log(xMouseTarget);
+	console.log(yMouseTarget);
 
+	console.log(playerAvatar)
+
+	// This needs generalising - currently hardcoded to terminal
+
+	if((xActualClick >= 540 && xActualClick <= 570) &&
+		(yActualClick >= 250 && yActualClick <= 290)){
+		console.log('within x and y of target')
+		var style = { font: "bold 32px Arial", fill: "#fff", boundsAlignH: "center", boundsAlignV: "middle" };
+		text = game.add.text(0, 0, "It's my trusty terminal.", style);
+		// time event to remove it
+	}
 };
 
 
